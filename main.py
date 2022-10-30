@@ -3,12 +3,16 @@ from os import remove, environ
 from mutagen.mp3 import MP3
 import uuid
 from functools import wraps
-from os.path import exists, join, expanduser, normpath
+from os.path import exists, join, expanduser, dirname
 from flask import Flask, jsonify, send_file, request
 import psycopg2
 from firebase_admin import auth
 import firebase_admin
+from dotenv import load_dotenv
 
+dotenv_path = join(dirname(__file__), '.env')
+if exists(dotenv_path):
+    load_dotenv(dotenv_path)
 
 default_app = firebase_admin.initialize_app()
 
@@ -194,6 +198,3 @@ def return_if_exists(uri):
     else:
         return '', 404
 
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=False)

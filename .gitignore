@@ -1,0 +1,5 @@
+.env
+Evolution-Files-Server/
+install.bash
+start.bash
+Evolution-Files-Server.conf
