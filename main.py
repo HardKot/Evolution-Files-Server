@@ -10,12 +10,12 @@ from firebase_admin import auth, credentials
 import firebase_admin
 from dotenv import load_dotenv
 
-dotenv_path = join(dirname(__file__), '.env')
+dotenv_path = join(expanduser('~'), '.env')
 if exists(dotenv_path):
     load_dotenv(dotenv_path)
 
-cred = credentials.Certificate('')
-firebase_admin.initialize_app(environ.get('pathFireBaseKey'))
+cred = credentials.Certificate(environ.get('pathFireBaseKey'))
+firebase_admin.initialize_app(cred)
 
 def connect_data_base():
     connect_data_base = psycopg2.connect(dbname=environ.get('dbname'), user=environ.get(
