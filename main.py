@@ -6,7 +6,7 @@ from functools import wraps
 from os.path import exists, join, expanduser, dirname
 from flask import Flask, jsonify, send_file, request
 import psycopg2
-from firebase_admin import auth
+from firebase_admin import auth, credentials
 import firebase_admin
 from dotenv import load_dotenv
 
@@ -14,8 +14,8 @@ dotenv_path = join(dirname(__file__), '.env')
 if exists(dotenv_path):
     load_dotenv(dotenv_path)
 
-default_app = firebase_admin.initialize_app()
-
+cred = credentials.Certificate('')
+firebase_admin.initialize_app(environ.get('pathFireBaseKey'))
 
 def connect_data_base():
     connect_data_base = psycopg2.connect(dbname=environ.get('dbname'), user=environ.get(
@@ -121,6 +121,7 @@ def home():
 
 @app.route('/image/<image_id>')
 def get_image_by_id(image_id):
+    app.logger.info(f'Запрос на получение изображение {image_id}')
     return return_if_exists(join('image', f'{image_id}.png'))
 
 
@@ -146,6 +147,8 @@ def get_image_by_id(image_id):
 @app.route('/meditation.audio/<meditation_id>')
 @get_user_data
 def get_meditation_audio(user, meditation_id):
+    name_user = "неопределенно" if user is None else f"от {user['id']}"
+    app.logger.info(f'Запрос на получение аудио записи {meditation_id} пользователем {name_user}')
     meditation = get_meditation_data(meditation_id)
     if meditation is None:
         return '', 404
@@ -157,39 +160,35 @@ def get_meditation_audio(user, meditation_id):
 @app.route('/image', methods=['POST'])
 @only_main_server
 def post_image():
-    if request.headers.get('Authorization', None) == environ.get('serverKey'):
-        image_id = uuid.uuid4()
-        with open(join(expanduser('~'), 'media', 'image', f'{image_id}.png'), 'bw') as image:
-            image.write(request.get_data())
-        return jsonify({'imageId': f'{image_id}'})
-    return '', 403
+    app.logger.info(f'Запрос на загрузку изображения')
+    image_id = uuid.uuid4()
+    with open(join(expanduser('~'), 'media', 'image', f'{image_id}.png'), 'bw') as image:
+        image.write(request.get_data())
+    return jsonify({'imageId': f'{image_id}'})
 
 
 @app.route('/image/<image_id>', methods=['PUT'])
 @only_main_server
 def put_image(image_id):
-    if request.headers.get('Authorization', None) == environ.get('serverKey'):
-        if exists(join(expanduser('~'), 'media', 'image', f'{image_id}.png')):
-            remove(join(expanduser('~'), 'media', 'image', f'{image_id}.png'))
-        image_id = uuid.uuid4()
-        with open(join(expanduser('~'), 'media', 'image', f'{image_id}.png'), 'bw') as image:
-            image.write(request.get_data())
-        return jsonify({'imageId': f'{image_id}'})
-    return '', 403
+    app.logger.info(f'Запрос на изменение изображения {image_id}')
+    if exists(join(expanduser('~'), 'media', 'image', f'{image_id}.png')):
+        remove(join(expanduser('~'), 'media', 'image', f'{image_id}.png'))
+    image_id = uuid.uuid4()
+    with open(join(expanduser('~'), 'media', 'image', f'{image_id}.png'), 'bw') as image:
+        image.write(request.get_data())
+    return jsonify({'imageId': f'{image_id}'})
 
 
 @app.route('/meditation.audio', methods=['POST'])
+@only_main_server
 def post_audio():
-    # environ.get('serverKey'):
-    if request.headers.get('Authorization', None) == '12':
-        audio_id = uuid.uuid4()
-        print(audio_id, expanduser('~'))
-        with open(join(expanduser('~'), 'media', 'audio', f'{audio_id}.mp3'), 'bw') as audio:
-            audio.write(request.get_data())
-        len_audio = MP3((join(expanduser('~'), 'media',
-                        'audio', f'{audio_id}.mp3'))).info.length
-        return jsonify({'audioId': f'{audio_id}', 'length': len_audio})
-    return '', 403
+    app.logger.info(f'Запрос на загрузку аудио')
+    audio_id = uuid.uuid4()
+    with open(join(expanduser('~'), 'media', 'audio', f'{audio_id}.mp3'), 'bw') as audio:
+        audio.write(request.get_data())
+    len_audio = MP3((join(expanduser('~'), 'media',
+                    'audio', f'{audio_id}.mp3'))).info.length
+    return jsonify({'audioId': f'{audio_id}', 'length': len_audio})
 
 
 def return_if_exists(uri):
