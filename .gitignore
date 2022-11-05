@@ -3,3 +3,5 @@ Evolution-Files-Server/
 install.bash
 start.bash
 Evolution-Files-Server.conf
+__pycache__/
+files_server.log
