@@ -9,16 +9,25 @@ import psycopg2
 from firebase_admin import auth, credentials
 import firebase_admin
 import validators
-
+import json
 
 firebase_admin.initialize_app(credentials.Certificate(
     join(expanduser('~'), 'firebase_key.json')))
 
+__DATABASE_NAME__ = None
+__DATABASE_PASSWORD__ = None
+__KEY__ = None
+
+with open(join(expanduser('~'), 'app_setting.json')) as app_setting_files:
+    app_setting = json.load(app_setting_files)
+    __DATABASE_NAME__ = app_setting['DATABASE_NAME']
+    __DATABASE_PASSWORD__ = app_setting['DATABASE_PASSWORD']
+    __KEY__ = app_setting['KEY']
+
 
 def connect_data_base():
-    connect_data_base = psycopg2.connect(dbname=environ.get(
-        'DATABASE_NAME'), user=environ.get(
-        'DATABASE_NAME'), password=environ.get('DATABASE_PASSWORD'), host='localhost')
+    connect_data_base = psycopg2.connect(
+        dbname=__DATABASE_NAME__, user=__DATABASE_NAME__, password=__DATABASE_PASSWORD__, host='localhost')
     cursor = connect_data_base.cursor()
 
     return connect_data_base, cursor
@@ -30,7 +39,7 @@ app = Flask(__name__)
 def only_main_server(func):
     @wraps(func)
     def _wrapper(*args, **kwargs):
-        if request.headers.get('Authorization', None) == environ.get('key'):
+        if request.headers.get('Authorization', None) == __KEY__:
             return func(*args, **kwargs)
         return '', 403
     return _wrapper
